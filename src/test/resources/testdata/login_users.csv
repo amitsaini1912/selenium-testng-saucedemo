@@ -1,0 +1,7 @@
+username,password,expectedResult,expectedMessage
+standard_user,secret_sauce,SUCCESS,
+locked_out_user,secret_sauce,FAILURE,Epic sadface: Sorry, this user has been locked out.
+standard_user,wrong_password,FAILURE,Epic sadface: Username and password do not match any user in this service
+invalid_user,secret_sauce,FAILURE,Epic sadface: Username and password do not match any user in this service
+,secret_sauce,FAILURE,Epic sadface: Username is required
+standard_user,,FAILURE,Epic sadface: Password is required

@@ -1,0 +1,9 @@
+target/
+!target/.gitkeep
+*.class
+.idea/
+*.iml
+.vscode/
+.DS_Store
+screenshots/
+extent-report/

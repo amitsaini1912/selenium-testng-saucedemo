@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!-- The short suite: run this on every commit, the full one nightly. -->
+<suite name="SauceDemo Smoke Suite" verbose="1">
+
+  <listeners>
+    <listener class-name="com.amitsaini.qa.listeners.TestListener"/>
+  </listeners>
+
+  <test name="Smoke">
+    <groups>
+      <run><include name="smoke"/></run>
+    </groups>
+    <classes>
+      <class name="com.amitsaini.qa.tests.LoginTests"/>
+      <class name="com.amitsaini.qa.tests.InventoryTests"/>
+      <class name="com.amitsaini.qa.tests.CheckoutTests"/>
+    </classes>
+  </test>
+
+</suite>
