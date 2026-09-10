@@ -28,7 +28,7 @@ public class InventoryPage extends BasePage {
     }
 
     public boolean isLoaded() {
-        return isDisplayed(inventoryContainer);
+        return isEventuallyVisible(inventoryContainer);
     }
 
     public int getProductCount() {
@@ -64,12 +64,18 @@ public class InventoryPage extends BasePage {
      * "Sauce Labs Backpack" -> add-to-cart-sauce-labs-backpack
      */
     public InventoryPage addProductToCart(String productName) {
-        click(By.id("add-to-cart-" + toButtonId(productName)));
+        String slug = toButtonId(productName);
+        click(By.id("add-to-cart-" + slug));
+        // The button flips to "Remove" once the add registers. Waiting for it
+        // keeps the next action (or a cart-badge read) from racing the click.
+        waitForVisible(By.id("remove-" + slug));
         return this;
     }
 
     public InventoryPage removeProductFromCart(String productName) {
-        click(By.id("remove-" + toButtonId(productName)));
+        String slug = toButtonId(productName);
+        click(By.id("remove-" + slug));
+        waitForVisible(By.id("add-to-cart-" + slug));
         return this;
     }
 

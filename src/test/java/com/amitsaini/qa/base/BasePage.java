@@ -43,6 +43,10 @@ public abstract class BasePage {
         return wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(locator));
     }
 
+    protected void waitForGone(By locator) {
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
+    }
+
     // ---------- actions ----------
 
     protected void click(By locator) {
@@ -68,13 +72,27 @@ public abstract class BasePage {
     // ---------- queries ----------
 
     /**
-     * True if the element is present AND visible. Returns false instead of
-     * throwing, so it can be used directly in an assertion.
+     * True if the element is present AND visible right now. Returns false
+     * instead of throwing, so it can be used directly in an assertion.
      */
     protected boolean isDisplayed(By locator) {
         try {
             return driver.findElement(locator).isDisplayed();
         } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    /**
+     * True if the element becomes visible within the explicit wait. Use this
+     * for "did the page load" / "did the error appear" checks, where the
+     * element is expected but may not have rendered yet.
+     */
+    protected boolean isEventuallyVisible(By locator) {
+        try {
+            waitForVisible(locator);
+            return true;
+        } catch (org.openqa.selenium.TimeoutException e) {
             return false;
         }
     }
