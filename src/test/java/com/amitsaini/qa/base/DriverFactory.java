@@ -37,7 +37,15 @@ public final class DriverFactory {
         // Implicit wait is deliberately NOT set. Mixing implicit and explicit
         // waits produces unpredictable timeouts; all waiting is explicit.
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(ConfigReader.getInt("page.load.timeout")));
-        driver.manage().window().maximize();
+
+        // Only maximize when a real window manager is present. In headless mode
+        // (CI) maximize() collapses the viewport to Chrome's 800x600 default,
+        // which overrides the --window-size argument and pushes buttons at the
+        // bottom of the page out of view, causing lost clicks. The headless
+        // options already fix the size at 1920x1080, so leave the window alone.
+        if (!headless) {
+            driver.manage().window().maximize();
+        }
         return driver;
     }
 

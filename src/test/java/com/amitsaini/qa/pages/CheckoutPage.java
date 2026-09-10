@@ -50,7 +50,7 @@ public class CheckoutPage extends BasePage {
     }
 
     public boolean isErrorDisplayed() {
-        return isDisplayed(errorMessage);
+        return isEventuallyVisible(errorMessage);
     }
 
     public String getErrorMessage() {
@@ -80,7 +80,7 @@ public class CheckoutPage extends BasePage {
     }
 
     public boolean isOrderComplete() {
-        return isDisplayed(completeHeader);
+        return isEventuallyVisible(completeHeader);
     }
 
     public InventoryPage backToProducts() {

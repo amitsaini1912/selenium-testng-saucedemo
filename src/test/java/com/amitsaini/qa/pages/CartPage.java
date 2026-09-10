@@ -20,14 +20,16 @@ public class CartPage extends BasePage {
     }
 
     public boolean isLoaded() {
-        return isDisplayed(cartList);
+        return isEventuallyVisible(cartList);
     }
 
     public int getItemCount() {
+        waitForVisible(cartList);
         return countOf(cartItems);
     }
 
     public List<String> getItemNames() {
+        waitForVisible(cartList);
         return driver.findElements(itemNames).stream()
                 .map(WebElement::getText)
                 .map(String::trim)
@@ -36,7 +38,11 @@ public class CartPage extends BasePage {
 
     public CartPage removeItem(String productName) {
         String id = "remove-" + productName.toLowerCase().replace(" ", "-");
-        click(By.id(id));
+        By removeButton = By.id(id);
+        click(removeButton);
+        // Wait for the row to actually leave the DOM before the caller reads
+        // the cart again, otherwise the count is read while it is still stale.
+        waitForGone(removeButton);
         return this;
     }
 

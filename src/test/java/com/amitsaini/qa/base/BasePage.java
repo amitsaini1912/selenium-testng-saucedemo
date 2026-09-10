@@ -2,6 +2,7 @@ package com.amitsaini.qa.base;
 
 import com.amitsaini.qa.utils.ConfigReader;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -43,18 +44,58 @@ public abstract class BasePage {
         return wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(locator));
     }
 
+    protected void waitForGone(By locator) {
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
+    }
+
     // ---------- actions ----------
 
     protected void click(By locator) {
-        waitForClickable(locator).click();
+        WebElement element = waitForClickable(locator);
+        // Headless Chrome intermittently swallows a native WebDriver click when
+        // it lands in the same frame as a React re-render (e.g. the second
+        // "Add to cart" on the listing, or a menu link mid slide-animation).
+        // The click is lost silently, with no exception, so a try/catch on the
+        // native click cannot recover it. Dispatching the click through the DOM
+        // fires the handler directly and is reliable. The waitForClickable gate
+        // above still enforces that the element is visible and enabled first.
+        // Firefox does not need this but is unaffected by it.
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", element);
     }
 
     protected void type(By locator, String text) {
-        WebElement element = waitForVisible(locator);
-        element.clear();
-        if (text != null && !text.isEmpty()) {
-            element.sendKeys(text);
+        String expected = text == null ? "" : text;
+        // Headless Chrome drops the keystrokes of the first sendKeys into a
+        // freshly rendered field often enough to fail the checkout tests every
+        // run. Re-find the field, focus it, type, then read the value back and
+        // retry if it did not land.
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                WebElement element = waitForClickable(locator);
+                element.click();
+                element.clear();
+                if (!expected.isEmpty()) {
+                    element.sendKeys(expected);
+                }
+                if (expected.equals(element.getDomProperty("value"))) {
+                    return;
+                }
+            } catch (org.openqa.selenium.StaleElementReferenceException ignored) {
+                // element was re-rendered between find and use; loop and retry
+            }
         }
+        // Fall back to setting the value through React's own value setter and
+        // firing the input event it listens for.
+        WebElement element = waitForClickable(locator);
+        ((JavascriptExecutor) driver).executeScript(
+                "const el = arguments[0], v = arguments[1];"
+                        + "const setter = Object.getOwnPropertyDescriptor("
+                        + "  window.HTMLInputElement.prototype, 'value').set;"
+                        + "setter.call(el, v);"
+                        + "el.dispatchEvent(new Event('input', {bubbles: true}));"
+                        + "el.dispatchEvent(new Event('change', {bubbles: true}));",
+                element, expected);
     }
 
     protected String getText(By locator) {
@@ -68,13 +109,27 @@ public abstract class BasePage {
     // ---------- queries ----------
 
     /**
-     * True if the element is present AND visible. Returns false instead of
-     * throwing, so it can be used directly in an assertion.
+     * True if the element is present AND visible right now. Returns false
+     * instead of throwing, so it can be used directly in an assertion.
      */
     protected boolean isDisplayed(By locator) {
         try {
             return driver.findElement(locator).isDisplayed();
         } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    /**
+     * True if the element becomes visible within the explicit wait. Use this
+     * for "did the page load" / "did the error appear" checks, where the
+     * element is expected but may not have rendered yet.
+     */
+    protected boolean isEventuallyVisible(By locator) {
+        try {
+            waitForVisible(locator);
+            return true;
+        } catch (org.openqa.selenium.TimeoutException e) {
             return false;
         }
     }
