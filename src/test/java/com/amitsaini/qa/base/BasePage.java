@@ -2,6 +2,7 @@ package com.amitsaini.qa.base;
 
 import com.amitsaini.qa.utils.ConfigReader;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -50,7 +51,17 @@ public abstract class BasePage {
     // ---------- actions ----------
 
     protected void click(By locator) {
-        waitForClickable(locator).click();
+        WebElement element = waitForClickable(locator);
+        // Headless Chrome intermittently swallows a native WebDriver click when
+        // it lands in the same frame as a React re-render (e.g. the second
+        // "Add to cart" on the listing, or a menu link mid slide-animation).
+        // The click is lost silently, with no exception, so a try/catch on the
+        // native click cannot recover it. Dispatching the click through the DOM
+        // fires the handler directly and is reliable. The waitForClickable gate
+        // above still enforces that the element is visible and enabled first.
+        // Firefox does not need this but is unaffected by it.
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", element);
     }
 
     protected void type(By locator, String text) {
